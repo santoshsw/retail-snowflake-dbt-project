@@ -1,0 +1,183 @@
+-- ==================================================================================================== 
+-- Drop existing schemas to reset the environment (cleanup step)
+drop schema dbt_retail_catalog.bronze;
+drop schema dbt_retail_catalog.landing_silver;
+drop schema dbt_retail_catalog.landing_gold;
+
+-- =====================================================================================================
+-- Incremental Tables (Part 1)
+-- =====================================================================================================
+
+-- Create an empty incremental table with the same structure as landing.orders
+-- `where 1=2` ensures no data is copied, only schema
+create table orders_incremental as 
+select * from landing.orders where 1=2;
+
+-- Verify the table structure (should return zero rows)
+select * from orders_incremental;
+
+-- View current data in incremental and source tables
+select * from orders; -- 2140 rows
+select * from orders_incremental; -- 0 rows
+select * from bronze.bronze_orders; -- 0 rows
+
+
+-- Check yearly distribution of source orders
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from orders 
+group by year(created_at) 
+order by order_year;
+
+-- Insert only 2016 data into incremental table (simulating first incremental load)
+insert into dbt_retail_catalog.landing.orders_incremental 
+select * 
+from dbt_retail_catalog.landing.orders 
+where year(created_at) = 2016;
+
+-- Validate inserted data
+select * from orders_incremental; -- 81 rows
+
+-- Verify year-wise row counts in incremental table
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from orders_incremental 
+group by year(created_at) 
+order by order_year;
+
+-- Compare with bronze layer data
+select * from bronze.bronze_orders; -- 81 rows
+ 
+-- Validate yearly counts from incremental table
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from orders_incremental 
+group by year(created_at) 
+order by order_year;
+
+-- Validate yearly counts from bronze table
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from bronze.bronze_orders 
+group by year(created_at) 
+order by order_year;
+
+
+-- View bronze orders sorted by primary key
+select * 
+from bronze.bronze_orders 
+order by id;
+
+-- In Snowflake, truncate bronze_orders to reset before reloading
+truncate table bronze.bronze_orders;
+
+-- Confirm bronze table is empty
+select * from bronze.bronze_orders;
+
+-- Confirm incremental table still holds data
+select * from orders_incremental;
+
+-- Validate bronze table row counts after truncate
+select * from bronze.bronze_orders;
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from bronze.bronze_orders 
+group by year(created_at) 
+order by order_year;
+
+-- Get latest timestamp from bronze table (used in incremental logic)
+select coalesce(max(created_at),'1900-01-01') from bronze.bronze_orders;
+
+-- Get latest timestamp from incremental staging table
+select coalesce(max(created_at),'1900-01-01') from landing.orders_incremental;
+
+-- Insert next batch (2017 data) into incremental table
+insert into landing.orders_incremental 
+select * 
+from landing.orders 
+where year(created_at) = 2017;
+
+-- Validate year-wise counts in incremental table
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from orders_incremental 
+group by year(created_at) 
+order by order_year;
+
+-- Validate year-wise counts in bronze table
+select 
+    year(created_at) as order_year, 
+    count(*) as total_rows
+from bronze.bronze_orders 
+group by year(created_at) 
+order by order_year;
+
+-- =====================================================================================================
+-- Incremental Tables (Part 2) – Updates and Deletes
+-- =====================================================================================================
+
+-- View bronze and incremental data
+select * from bronze.bronze_orders order by id;
+select * from orders_incremental;
+
+-- Inspect a specific record by ID
+select * from orders_incremental where id = 2000;
+select * from bronze.bronze_orders where id = 2000;
+
+-- Update a record in incremental table to simulate late-arriving changes
+update orders_incremental
+set quantity = 1000, created_at = current_timestamp()
+where id = 2000;
+
+-- Verify the update
+select * from orders_incremental where id = 2000;
+
+-- Check if bronze table reflects the update (it should not yet)
+select * from bronze.bronze_orders where id = 2000;
+
+-- Delete incorrect record from bronze table
+delete 
+from bronze.bronze_orders 
+where id = 2000 and quantity = 1000;
+
+-- Validate deletion
+select * from bronze.bronze_orders where id = 2000;
+
+-- =====================================================================================================
+-- Snapshots and SCD Type 2
+-- =====================================================================================================
+
+-- View a specific product record before update
+select * 
+from dbt_retail_catalog.landing.products 
+where id = 200;
+
+-- Update product price and timestamp in landing table
+-- This change should be captured by dbt snapshot (SCD Type 2)
+update dbt_retail_catalog.landing.products
+set price = 500, created_at = current_timestamp()
+where id = 200;
+
+-- Verify updated product
+select * 
+from dbt_retail_catalog.landing.products 
+where id = 200;
+
+-- Check snapshot table to confirm historical versioning
+select * 
+from dbt_retail_catalog.bronze.products_snapshot 
+where id = 200;
+
+-- Drop bronze products table for testing or re-creation
+drop table DBT_RETAIL_CATALOG.BRONZE.BRONZE_PRODUCTS;
+
+-- Additional validation of snapshot history
+select * 
+from dbt_retail_catalog.bronze.products_snapshot 
+where id = 200;
