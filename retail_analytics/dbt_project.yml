@@ -42,3 +42,7 @@ models:
     gold:
       +materialized: table
       +schema: gold
+
+seeds:
+  retail_analytics:
+    +schema: bronze
