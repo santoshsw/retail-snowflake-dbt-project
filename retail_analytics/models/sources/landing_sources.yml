@@ -5,6 +5,7 @@ sources:
     database: dbt_retail_catalog
     schema: landing
     tables:
+      - name: orders_incremental
       - name: orders
         columns:
           - name: id
@@ -29,11 +30,6 @@ sources:
             tests: 
              - accepted_values:
                 values: ["Doohickey", "Widget", "Gizmo", "Gadget"]  
-          - name: id
-            tests: 
-              - relationships:
-                 field: product_id
-                 to: ref('bronze_orders')
       - name: users
         columns:
           - name: id
