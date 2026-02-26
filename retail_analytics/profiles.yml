@@ -1,0 +1,13 @@
+retail_analytics:
+  outputs:
+    dev:
+      account: OTVHZFT-YZ81603
+      database: dbt_retail_catalog
+      password: dbtPassword123
+      role: TRANSFORM
+      schema: dbt_santosh
+      threads: 1
+      type: snowflake
+      user: dbt_user
+      warehouse: COMPUTE_WH
+  target: dev
