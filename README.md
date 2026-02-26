@@ -125,4 +125,4 @@ retail_analytics/
     │   └── non_negative.sql
     │
     └── seeds/                          # Static reference data
-          └── product_categories.csv
+          └── product_categories.csv  
