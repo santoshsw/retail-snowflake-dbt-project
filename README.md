@@ -1,39 +1,57 @@
-# 🏠 Retail End-to-End Data Engineering Project 🏠
+# 🏠 Retail End-to-End Data Engineering Project
 
 ## 📄 Overview
 
-This project implements a complete end-to-end data engineering pipeline using
-modern cloud data technologies.
+This project implements a complete end-to-end Retail data engineering pipeline using modern cloud-native technologies.
 
-The solution demonstrates best practices in data warehousing using
-**Snowflake**, **dbt (Data Build Tool)**, and **Azure**.
+The solution follows analytics engineering best practices using **Snowflake**, **dbt (Data Build Tool)**, and **Azure**, and is designed around the **Medallion Architecture (Bronze, Silver, Gold)**.
 
-The pipeline processes Retail orders, products, users, and reviews data using a
-**Medallion Architecture (Bronze, Silver, Gold)** with incremental loading and
-Slowly Changing Dimensions (SCD Type 2).
+The pipeline processes retail **orders, products, users, and reviews** data with incremental loading, transformations, and Slowly Changing Dimensions (SCD Type 2).
 
 ---
 
 ## 🏗 Architecture
 
-### Data Flow
+### High-Level Data Flow
 
-Source Data (CSV) → Azure ADLS → Snowflake (Staging) → Bronze Layer → Silver Layer → Gold Layer
-
-                                                        Raw Tables    Cleaned Data   Analytics
-
-
+Source Data (CSV)
+        |
+        v
+Azure ADLS Gen2
+        |
+        v
+Snowflake (Landing / Staging)
+        |
+        v
+-------------------------------
+|        Bronze Layer         |
+|  Raw, append-only tables    |
+-------------------------------
+        |
+        v
+-------------------------------
+|        Silver Layer         |
+| Cleaned & standardized data|
+-------------------------------
+        |
+        v
+-------------------------------
+|         Gold Layer          |
+| Analytics-ready models     |
+-------------------------------
+        |
+        v
 
 ---
 
 ## 🧰 Technology Stack
 
-- **Cloud Data Warehouse:** Snowflake  
-- **Transformation Layer:** dbt (Data Build Tool)  
-- **Cloud Storage:** Azure ADLS Gen2  
-- **Orchestration:** dbt Cloud / dbt Core  
-- **Version Control:** Git  
-- **Programming Language:** Python 3.12  
+- Cloud Data Warehouse: Snowflake
+- Transformation Layer: dbt (Data Build Tool)
+- Cloud Storage: Azure ADLS Gen2
+- Orchestration: dbt Core / dbt Cloud
+- Version Control: Git
+- Programming Language: Python 3.12
 
 ---
 
@@ -42,29 +60,34 @@ Source Data (CSV) → Azure ADLS → Snowflake (Staging) → Bronze Layer → Si
 ### Medallion Architecture
 
 #### 🥉 Bronze Layer (Raw Data)
-- Raw ingested tables from Snowflake staging
+- Raw ingested data from Snowflake landing tables
 - Minimal transformations
 - Append-only incremental loads
 
 #### 🥈 Silver Layer (Cleaned Data)
 - Data cleansing and standardization
-- Business rules applied
 - Deduplication and type casting
+- Business rules applied
 
 #### 🥇 Gold Layer (Analytics-Ready)
 - Fact and dimension tables
-- Optimized for BI and reporting
 - Aggregated metrics
+- Optimized for reporting and BI tools
 
 ---
 
 ## 🕒 Snapshots (SCD Type 2)
 
-- Implemented using dbt snapshots
-- Tracks historical changes for:
-  - Products
-  - Users
-- Preserves previous values with validity periods
+Snapshots are implemented using dbt snapshots to track historical changes.
+
+Tracked entities:
+- Products
+- Users
+
+Features:
+- Historical versioning
+- Valid from and valid to timestamps
+- Full audit trail of changes
 
 ---
 
@@ -72,57 +95,60 @@ Source Data (CSV) → Azure ADLS → Snowflake (Staging) → Bronze Layer → Si
 
 ```text
 retail_analytics/
-├── README.md                           # This file
-├── pyproject.toml                      # Python dependencies
-├── main.py                             # Main execution script
+├── README.md
+├── pyproject.toml
+├── main.py
 │
-├── SourceData/                         # Raw CSV data files
+├── SourceData/
 │   ├── orders.csv
 │   ├── products.csv
-│   └── users.csv 
+│   ├── users.csv
 │   └── reviews.csv
 │
-│
-└── retail_analytics/                   # Main dbt project
-    ├── dbt_project.yml                 # dbt project configuration
-    ├── ExampleProfiles.yml             # Snowflake connection profile
+└── retail_analytics/
+    ├── dbt_project.yml
+    ├── ExampleProfiles.yml
     │
-    ├── models/                         # dbt models
+    ├── models/
     │   ├── sources/
-    │   │   └── landing_sources.yml     # Source definitions
-    │   ├── bronze/                     # Raw data layer
+    │   │   └── landing_sources.yml
+    │   │
+    │   ├── bronze/
     │   │   ├── bronze_orders.sql
     │   │   ├── bronze_products.sql
-    │   │   ├── bronze_users.sql 
-    │   │   └── bronze_reviewss.sql
-    │   ├── silver/                     # Cleaned data layer
+    │   │   ├── bronze_users.sql
+    │   │   └── bronze_reviews.sql
+    │   │
+    │   ├── silver/
     │   │   ├── silver_orders.sql
     │   │   ├── silver_products.sql
     │   │   └── silver_users.sql
-    │   └── gold/                       # Analytics layer
+    │   │
+    │   └── gold/
     │       ├── gold_sales__daily.sql
     │       ├── gold_avg_rating__daily.sql
-    │       └── ephemeral/              # Temporary models
+    │       └── ephemeral/
     │           ├── orders.sql
     │           ├── products.sql
     │           └── users.sql
     │
-    ├── macros/                         # Reusable SQL functions
-    │   ├── generate_schema_name.sql    # Custom schema naming
-    │   ├── multiply_columns.sql        # Math operations
-    │   └── current_timestamp.sql       # Timestamp logic
+    ├── macros/
+    │   ├── generate_schema_name.sql
+    │   ├── multiply_columns.sql
+    │   └── current_timestamp.sql
     │
-    ├── analyses/                       # Ad-hoc analysis queries
+    ├── analyses/
     │   ├── if_else.sql
     │   └── date_spine_demo.sql
     │
-    ├── snapshots/                      # SCD Type 2 configurations
+    ├── snapshots/
     │   ├── products_snapshot.sql
     │   └── users_snapshot.sql
     │
-    ├── tests/                          # Data quality tests
-    │   └── properties.yml
+    ├── tests/
+    │   ├── properties.yml
     │   └── non_negative.sql
     │
-    └── seeds/                          # Static reference data
-          └── product_categories.csv
+    └── seeds/
+        └── product_categories.csv
+
