@@ -5,6 +5,6 @@ SELECT
         product_id,
         quantity,
         unit_price,
-        quantity * unit_price as order_amount
+        {{ multiply_columns_and_round('quantity', 'unit_price') }} as order_amount
 FROM 
     {{ ref('bronze_orders') }}
