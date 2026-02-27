@@ -126,4 +126,3 @@ retail_analytics/
     │
     └── seeds/
         └── product_categories.csv
-
