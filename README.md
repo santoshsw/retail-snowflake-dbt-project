@@ -13,34 +13,9 @@ The pipeline processes retail **orders, products, users, and reviews** data with
 ## 🏗 Architecture
 
 ### High-Level Data Flow
-
-Source Data (CSV)
-        |
-        v
-Azure ADLS Gen2
-        |
-        v
-Snowflake (Landing / Staging)
-        |
-        v
--------------------------------
-|        Bronze Layer         |
-|  Raw, append-only tables    |
--------------------------------
-        |
-        v
--------------------------------
-|        Silver Layer         |
-| Cleaned & standardized data|
--------------------------------
-        |
-        v
--------------------------------
-|         Gold Layer          |
-| Analytics-ready models     |
--------------------------------
-        |
-        v
+Source Data (CSV) → Azure ADLS → Snowflake (Staging) → Bronze Layer → Silver Layer → Gold Layer
+                                                           ↓              ↓           ↓
+                                                      Raw Tables    Cleaned Data   Analytics
 
 ---
 
